@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VoiceCoach AI — Microlearning for Frontline Workers</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+/* ── CSS Variables ─────────────────────────────────────────── */
+:root {
+  --bg: #0a0d14;
+  --surface: #111520;
+  --card: #161c2d;
+  --border: rgba(255,255,255,0.07);
+  --primary: #6c63ff;
+  --primary-glow: rgba(108,99,255,0.25);
+  --accent: #00d4aa;
+  --accent-glow: rgba(0,212,170,0.2);
+  --warn: #ff6b6b;
+  --text: #e8eaf0;
+  --muted: #6b7280;
+  --user-bubble: linear-gradient(135deg,#6c63ff,#9c6cf3);
+  --ai-bubble: #1a2035;
+  --radius: 16px;
+  --shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+/* ── Reset & Base ──────────────────────────────────────────── */
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  overflow-x:hidden;
+}
+
+/* ── Animated BG Gradient ──────────────────────────────────── */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 800px 600px at 20% 20%, rgba(108,99,255,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 600px 500px at 80% 80%, rgba(0,212,170,0.06) 0%, transparent 60%);
+  pointer-events:none;z-index:0;
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+header{
+  position:relative;z-index:10;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 28px;
+  background:rgba(17,21,32,0.8);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+.logo{
+  display:flex;align-items:center;gap:12px;
+  font-size:1.2rem;font-weight:700;
+}
+.logo-icon{
+  width:40px;height:40px;border-radius:12px;
+  background:linear-gradient(135deg,var(--primary),var(--accent));
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;
+  box-shadow:0 4px 16px var(--primary-glow);
+}
+.status-badge{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 14px;border-radius:20px;
+  background:rgba(0,212,170,0.1);
+  border:1px solid rgba(0,212,170,0.25);
+  font-size:0.75rem;font-weight:500;color:var(--accent);
+}
+.status-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--accent);
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+
+/* ── Layout ──────────────────────────────────────────────────── */
+.app-layout{
+  position:relative;z-index:1;
+  display:grid;
+  grid-template-columns:280px 1fr;
+  height:calc(100vh - 73px);
+  overflow:hidden;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────── */
+.sidebar{
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.sidebar-top{
+  padding:20px;
+  border-bottom:1px solid var(--border);
+}
+.sidebar-top h3{
+  font-size:0.7rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:1px;color:var(--muted);
+  margin-bottom:12px;
+}
+.mode-btn{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;border-radius:10px;
+  border:none;cursor:pointer;width:100%;
+  text-align:left;font-family:'Inter',sans-serif;
+  font-size:0.85rem;font-weight:500;
+  transition:all 0.2s;margin-bottom:4px;
+  color:var(--muted);background:transparent;
+}
+.mode-btn:hover{background:rgba(255,255,255,0.04);color:var(--text)}
+.mode-btn.active{
+  background:var(--primary-glow);
+  color:var(--primary);
+  border:1px solid rgba(108,99,255,0.3);
+}
+.mode-icon{font-size:1.1rem;width:28px;text-align:center}
+
+/* Progress section */
+.sidebar-progress{padding:20px;border-bottom:1px solid var(--border)}
+.sidebar-progress h3{
+  font-size:0.7rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:1px;color:var(--muted);
+  margin-bottom:14px;
+}
+.stat-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.stat-label{font-size:0.8rem;color:var(--muted)}
+.stat-val{font-size:0.9rem;font-weight:700;color:var(--text)}
+.progress-bar-wrap{
+  margin-top:8px;
+  background:rgba(255,255,255,0.06);border-radius:6px;height:6px;overflow:hidden;
+}
+.progress-bar-fill{
+  height:100%;border-radius:6px;
+  background:linear-gradient(90deg,var(--primary),var(--accent));
+  transition:width 0.6s ease;
+  width:0%;
+}
+
+/* Topics list */
+.sidebar-topics{flex:1;overflow-y:auto;padding:20px}
+.sidebar-topics h3{
+  font-size:0.7rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:1px;color:var(--muted);
+  margin-bottom:12px;
+}
+.topic-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 11px;border-radius:20px;
+  background:rgba(108,99,255,0.12);
+  border:1px solid rgba(108,99,255,0.2);
+  font-size:0.75rem;font-weight:500;color:#a89cff;
+  margin:0 4px 6px 0;
+}
+
+/* ── Main Chat Area ───────────────────────────────────────────── */
+.chat-area{
+  display:flex;flex-direction:column;
+  background:var(--bg);
+  overflow:hidden;
+}
+
+/* ── Mode Panels ─────────────────────────────────────────────── */
+.panel{display:none;flex-direction:column;flex:1;overflow:hidden}
+.panel.active{display:flex}
+
+/* ── Lesson Panel ────────────────────────────────────────────── */
+.lesson-panel{padding:24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:16px}
+.panel-header{
+  display:flex;align-items:center;gap:12px;
+  padding-bottom:20px;border-bottom:1px solid var(--border);
+}
+.panel-header h2{font-size:1.3rem;font-weight:700}
+.panel-header p{font-size:0.85rem;color:var(--muted);margin-top:2px}
+
+/* Input Group */
+.input-group{
+  display:flex;gap:10px;
+  background:var(--card);
+  padding:16px;border-radius:var(--radius);
+  border:1px solid var(--border);
+}
+.input-group input{
+  flex:1;background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:10px;padding:12px 16px;
+  color:var(--text);font-family:'Inter',sans-serif;font-size:0.9rem;
+  outline:none;transition:border-color 0.2s;
+}
+.input-group input:focus{border-color:var(--primary)}
+.input-group input::placeholder{color:var(--muted)}
+.btn-primary{
+  background:linear-gradient(135deg,var(--primary),#9c6cf3);
+  border:none;border-radius:10px;color:#fff;
+  font-family:'Inter',sans-serif;font-weight:600;font-size:0.85rem;
+  padding:12px 20px;cursor:pointer;
+  transition:all 0.2s;white-space:nowrap;
+  box-shadow:0 4px 16px var(--primary-glow);
+}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 24px var(--primary-glow)}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
+/* Quick topics */
+.quick-topics{display:flex;flex-wrap:wrap;gap:8px}
+.quick-btn{
+  padding:8px 16px;border-radius:20px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);
+  color:var(--text);font-family:'Inter',sans-serif;
+  font-size:0.8rem;cursor:pointer;transition:all 0.2s;
+}
+.quick-btn:hover{
+  background:rgba(108,99,255,0.15);
+  border-color:rgba(108,99,255,0.4);color:var(--primary);
+}
+
+/* Lesson Card */
+.lesson-card{
+  background:var(--card);border-radius:var(--radius);
+  border:1px solid var(--border);overflow:hidden;
+  animation:slideUp 0.4s ease;
+}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+.lesson-card-header{
+  padding:20px 24px;
+  background:linear-gradient(135deg,rgba(108,99,255,0.15),rgba(0,212,170,0.08));
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:flex-start;gap:16px;
+}
+.lesson-emoji{font-size:2.5rem;line-height:1}
+.lesson-title{font-size:1.1rem;font-weight:700;margin-bottom:4px}
+.lesson-summary{font-size:0.82rem;color:var(--muted)}
+
+.lesson-card-body{padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+.lesson-text{line-height:1.7;font-size:0.9rem;color:#c8cad4}
+
+.examples-section h4,
+.takeaway-section h4{font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:10px}
+.example-item{
+  display:flex;gap:10px;align-items:flex-start;
+  padding:10px 14px;border-radius:10px;
+  background:rgba(255,255,255,0.03);
+  border-left:3px solid var(--accent);
+  margin-bottom:6px;font-size:0.85rem;line-height:1.5;
+}
+.example-num{color:var(--accent);font-weight:700;min-width:20px}
+.takeaway-box{
+  display:flex;gap:12px;align-items:center;
+  padding:14px 18px;border-radius:12px;
+  background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(0,212,170,0.08));
+  border:1px solid rgba(108,99,255,0.2);
+  font-size:0.88rem;font-weight:500;
+}
+
+/* TTS button */
+.tts-row{display:flex;gap:10px;padding:0 24px 20px}
+.btn-secondary{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 18px;border-radius:10px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);
+  color:var(--text);font-family:'Inter',sans-serif;font-size:0.82rem;
+  cursor:pointer;transition:all 0.2s;
+}
+.btn-secondary:hover{background:rgba(0,212,170,0.1);border-color:rgba(0,212,170,0.3);color:var(--accent)}
+
+/* Quiz CTA */
+.quiz-cta{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:16px 20px;border-radius:var(--radius);
+  background:rgba(0,212,170,0.07);
+  border:1px solid rgba(0,212,170,0.2);
+}
+.quiz-cta p{font-size:0.85rem;color:var(--muted)}
+.quiz-cta strong{display:block;font-size:0.92rem;color:var(--text);margin-bottom:2px}
+
+/* ── Chat Panel ──────────────────────────────────────────────── */
+.chat-messages{
+  flex:1;overflow-y:auto;
+  padding:20px;
+  display:flex;flex-direction:column;gap:16px;
+}
+.message{display:flex;gap:12px;animation:slideUp 0.3s ease}
+.message.user{flex-direction:row-reverse}
+.avatar{
+  width:36px;height:36px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:1rem;
+}
+.avatar.ai{background:linear-gradient(135deg,var(--primary),#9c6cf3)}
+.avatar.user{background:linear-gradient(135deg,#f59e0b,#ef4444)}
+
+.bubble{
+  max-width:72%;padding:12px 16px;border-radius:16px;
+  font-size:0.88rem;line-height:1.6;
+}
+.message.ai .bubble{background:var(--ai-bubble);border:1px solid var(--border);border-top-left-radius:4px}
+.message.user .bubble{background:var(--user-bubble);border-top-right-radius:4px;color:#fff}
+
+.bubble-time{font-size:0.7rem;color:var(--muted);margin-top:4px}
+.typing-indicator{display:flex;gap:4px;padding:8px 4px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);animation:bounce 1.2s infinite}
+.dot:nth-child(2){animation-delay:0.2s}
+.dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-8px)}}
+
+/* Chat input */
+.chat-input-area{
+  padding:16px 20px;
+  border-top:1px solid var(--border);
+  background:var(--surface);
+  display:flex;gap:10px;align-items:center;
+}
+.chat-input{
+  flex:1;background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:12px;padding:12px 16px;
+  color:var(--text);font-family:'Inter',sans-serif;font-size:0.88rem;
+  outline:none;transition:border-color 0.2s;
+}
+.chat-input:focus{border-color:var(--primary)}
+.chat-input::placeholder{color:var(--muted)}
+.mic-btn{
+  width:44px;height:44px;border-radius:12px;border:none;
+  background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  color:var(--muted);cursor:pointer;font-size:1.1rem;
+  transition:all 0.2s;display:flex;align-items:center;justify-content:center;
+}
+.mic-btn:hover{background:rgba(108,99,255,0.15);border-color:var(--primary);color:var(--primary)}
+.mic-btn.recording{
+  background:rgba(255,107,107,0.15);border-color:var(--warn);color:var(--warn);
+  animation:recordPulse 1s infinite;
+}
+@keyframes recordPulse{0%,100%{box-shadow:none}50%{box-shadow:0 0 16px rgba(255,107,107,0.4)}}
+.btn-secondary.speaking{
+  background:rgba(0,212,170,0.15);border-color:rgba(0,212,170,0.5);color:var(--accent);
+  animation:speakPulse 1.5s infinite;
+}
+@keyframes speakPulse{0%,100%{opacity:1}50%{opacity:0.6}}
+.voice-hint{font-size:0.72rem;color:var(--muted);text-align:center;padding:4px 0 0;}
+.stt-status{
+  padding:6px 12px;border-radius:8px;font-size:0.78rem;
+  background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.2);
+  color:var(--primary);display:none;text-align:center;margin-bottom:4px;
+}
+
+/* ── Quiz Panel ──────────────────────────────────────────────── */
+.quiz-panel-wrap{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:20px}
+.quiz-setup{
+  background:var(--card);border-radius:var(--radius);border:1px solid var(--border);
+  padding:24px;display:flex;flex-direction:column;gap:16px;
+}
+.quiz-q{
+  background:var(--card);border-radius:var(--radius);border:1px solid var(--border);
+  padding:20px;animation:slideUp 0.3s ease;
+}
+.quiz-q-num{font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px}
+.quiz-q-text{font-size:1rem;font-weight:600;margin-bottom:16px;line-height:1.5}
+.quiz-options{display:flex;flex-direction:column;gap:8px}
+.quiz-opt{
+  padding:12px 16px;border-radius:10px;
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.06);
+  cursor:pointer;transition:all 0.2s;
+  font-size:0.88rem;text-align:left;
+  color:var(--text);font-family:'Inter',sans-serif;
+  display:flex;align-items:center;gap:10px;
+}
+.quiz-opt:hover{background:rgba(108,99,255,0.1);border-color:rgba(108,99,255,0.3)}
+.quiz-opt.correct{background:rgba(0,212,170,0.12);border-color:rgba(0,212,170,0.4);color:var(--accent)}
+.quiz-opt.wrong{background:rgba(255,107,107,0.08);border-color:rgba(255,107,107,0.3);color:var(--warn)}
+.quiz-opt.disabled{pointer-events:none}
+.quiz-explanation{
+  margin-top:12px;padding:10px 14px;border-radius:8px;
+  background:rgba(255,255,255,0.03);border-left:3px solid var(--accent);
+  font-size:0.82rem;color:var(--muted);display:none;
+}
+.score-card{
+  text-align:center;padding:36px;background:var(--card);
+  border-radius:var(--radius);border:1px solid var(--border);
+  animation:slideUp 0.4s ease;
+}
+.score-emoji{font-size:3.5rem;margin-bottom:12px}
+.score-num{font-size:3rem;font-weight:800;background:linear-gradient(135deg,var(--primary),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.score-label{font-size:1rem;color:var(--muted);margin-top:4px}
+
+/* ── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.15)}
+
+/* ── Toast ──────────────────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:24px;right:24px;
+  padding:12px 20px;border-radius:12px;
+  background:var(--card);border:1px solid var(--border);
+  font-size:0.85rem;z-index:999;
+  box-shadow:var(--shadow);
+  transform:translateY(80px);opacity:0;
+  transition:all 0.3s ease;pointer-events:none;
+}
+.toast.show{transform:translateY(0);opacity:1}
+
+/* ── Loading Spinner ─────────────────────────────────────────── */
+.spinner{
+  width:20px;height:20px;border-radius:50%;
+  border:2px solid rgba(255,255,255,0.2);
+  border-top-color:#fff;
+  animation:spin 0.8s linear infinite;display:inline-block;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media(max-width:768px){
+  .app-layout{grid-template-columns:1fr}
+  .sidebar{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────── -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🎙️</div>
+    <div>
+      <div>VoiceCoach <span style="color:var(--primary)">AI</span></div>
+      <div style="font-size:0.65rem;font-weight:400;color:var(--muted)">Microlearning for Frontline Workers</div>
+    </div>
+  </div>
+  <div class="status-badge">
+    <div class="status-dot"></div>
+    <span id="api-status">Connecting…</span>
+  </div>
+</header>
+
+<!-- ── App Layout ──────────────────────────────────────────── -->
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <h3>Navigation</h3>
+      <button class="mode-btn active" id="btn-lesson" onclick="switchMode('lesson')">
+        <span class="mode-icon">📚</span>Learn a Topic
+      </button>
+      <button class="mode-btn" id="btn-chat" onclick="switchMode('chat')">
+        <span class="mode-icon">💬</span>Ask a Question
+      </button>
+      <button class="mode-btn" id="btn-quiz" onclick="switchMode('quiz')">
+        <span class="mode-icon">🧪</span>Take a Quiz
+      </button>
+    </div>
+    <div class="sidebar-progress">
+      <h3>Your Progress</h3>
+      <div class="stat-row">
+        <span class="stat-label">Lessons Done</span>
+        <span class="stat-val" id="stat-lessons">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Quiz Score</span>
+        <span class="stat-val" id="stat-score">—</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progress-fill"></div>
+      </div>
+    </div>
+    <div class="sidebar-topics">
+      <h3>Topics Covered</h3>
+      <div id="topics-list">
+        <span style="font-size:0.78rem;color:var(--muted)">No topics yet — start learning!</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="chat-area">
+
+    <!-- ── LESSON PANEL ──────────────────────────────────── -->
+    <div class="panel active" id="panel-lesson">
+      <div class="lesson-panel">
+        <div class="panel-header">
+          <div>
+            <h2>📚 Learn a New Topic</h2>
+            <p>Type any topic and get an instant microlesson in seconds</p>
+          </div>
+        </div>
+
+        <!-- Input -->
+        <div class="input-group">
+          <input type="text" id="lesson-input" placeholder="e.g. Fire Safety, PPE, Machine Handling…" onkeydown="if(event.key==='Enter')generateLesson()"/>
+          <button class="btn-primary" onclick="generateLesson()" id="lesson-btn">
+            ✨ Generate Lesson
+          </button>
+        </div>
+
+        <!-- Quick topics -->
+        <div>
+          <p style="font-size:0.78rem;color:var(--muted);margin-bottom:10px">Quick topics:</p>
+          <div class="quick-topics">
+            <button class="quick-btn" onclick="quickLesson('Fire Safety')">🔥 Fire Safety</button>
+            <button class="quick-btn" onclick="quickLesson('PPE Usage')">🦺 PPE Usage</button>
+            <button class="quick-btn" onclick="quickLesson('First Aid')">🩹 First Aid</button>
+            <button class="quick-btn" onclick="quickLesson('Machine Safety')">⚙️ Machine Safety</button>
+            <button class="quick-btn" onclick="quickLesson('Food Hygiene')">🍽️ Food Hygiene</button>
+          </div>
+        </div>
+
+        <!-- Lesson Output -->
+        <div id="lesson-output"></div>
+      </div>
+    </div>
+
+    <!-- ── CHAT PANEL ────────────────────────────────────── -->
+    <div class="panel" id="panel-chat">
+      <div class="chat-messages" id="chat-messages">
+        <div class="message ai">
+          <div class="avatar ai">🤖</div>
+          <div>
+            <div class="bubble">
+              👋 Hi! I'm your AI training coach. Ask me anything about workplace safety, procedures, or skills. I'll answer in simple, clear language.<br><br>
+              You can also use the <strong>🎤 microphone</strong> to ask with your voice!
+            </div>
+            <div class="bubble-time">Just now</div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:0 20px 4px">
+        <div class="stt-status" id="stt-status">🎙️ Listening… speak now</div>
+      </div>
+      <div class="chat-input-area">
+        <button class="mic-btn" id="mic-btn" onclick="toggleMic()" title="Click to speak — uses your browser's voice recognition">🎤</button>
+        <input class="chat-input" id="chat-input" placeholder="Ask anything about your training…" onkeydown="if(event.key==='Enter')sendChat()"/>
+        <button class="btn-primary" onclick="sendChat()">Send</button>
+      </div>
+      <div class="voice-hint" id="voice-hint">🌐 Voice powered by Web Speech API (Chrome/Edge best)</div>
+    </div>
+
+    <!-- ── QUIZ PANEL ────────────────────────────────────── -->
+    <div class="panel" id="panel-quiz">
+      <div class="quiz-panel-wrap" id="quiz-wrap">
+        <div class="panel-header">
+          <div>
+            <h2>🧪 Test Your Knowledge</h2>
+            <p>Reinforce what you learned with a quick quiz</p>
+          </div>
+        </div>
+        <div class="quiz-setup">
+          <div class="input-group" style="padding:0;background:none;border:none">
+            <input type="text" id="quiz-topic" placeholder="Quiz topic, e.g. Fire Safety…" onkeydown="if(event.key==='Enter')startQuiz()"/>
+            <button class="btn-primary" onclick="startQuiz()" id="quiz-btn">🎯 Start Quiz</button>
+          </div>
+          <div class="quick-topics">
+            <button class="quick-btn" onclick="document.getElementById('quiz-topic').value='Fire Safety'">🔥 Fire Safety</button>
+            <button class="quick-btn" onclick="document.getElementById('quiz-topic').value='PPE'">🦺 PPE</button>
+            <button class="quick-btn" onclick="document.getElementById('quiz-topic').value='First Aid'">🩹 First Aid</button>
+          </div>
+        </div>
+        <div id="quiz-questions"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── Config ──────────────────────────────────────────────────── */
+const API = 'http://localhost:8000';
+const SESSION = 'user_' + Math.random().toString(36).slice(2,8);
+let currentTopic = '';
+let quizData = [];
+let quizAnswers = {};
+// Voice state managed in STT section below
+
+/* ── API Health Check ──────────────────────────────────────── */
+async function checkHealth(){
+  try{
+    const r = await fetch(`${API}/health`);
+    const d = await r.json();
+    document.getElementById('api-status').textContent =
+      d.llm === 'gemini' ? '🟢 Gemini AI Active' : '🟡 Demo Mode';
+  } catch {
+    document.getElementById('api-status').textContent = '🔴 API Offline';
+  }
+}
+checkHealth();
+
+/* ── Mode Switching ──────────────────────────────────────────── */
+function switchMode(mode){
+  ['lesson','chat','quiz'].forEach(m => {
+    document.getElementById(`panel-${m}`).classList.remove('active');
+    document.getElementById(`btn-${m}`).classList.remove('active');
+  });
+  document.getElementById(`panel-${mode}`).classList.add('active');
+  document.getElementById(`btn-${mode}`).classList.add('active');
+}
+
+/* ── Toast ───────────────────────────────────────────────────── */
+function toast(msg, duration=2500){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(()=> el.classList.remove('show'), duration);
+}
+
+/* ── Lesson Generator ────────────────────────────────────────── */
+function quickLesson(topic){
+  document.getElementById('lesson-input').value = topic;
+  generateLesson();
+}
+
+async function generateLesson(){
+  const topic = document.getElementById('lesson-input').value.trim();
+  if(!topic){ toast('⚠️ Please enter a topic first'); return; }
+
+  currentTopic = topic;
+  const btn = document.getElementById('lesson-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+  document.getElementById('lesson-output').innerHTML = `
+    <div style="text-align:center;padding:40px;color:var(--muted)">
+      <div class="spinner" style="width:32px;height:32px;margin:0 auto 12px;border-width:3px"></div>
+      <p>Generating your microlesson…</p>
+    </div>`;
+
+  try{
+    const res = await fetch(`${API}/generate-lesson`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({topic, session_id:SESSION})
+    });
+    const json = await res.json();
+    if(json.success) renderLesson(json.data, json.session);
+    else toast('❌ Failed to generate lesson');
+  } catch(e){
+    toast('❌ API not reachable — run: uvicorn main:app --reload');
+    renderLesson(getDemoLesson(topic), null);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '✨ Generate Lesson';
+  }
+}
+
+function renderLesson(d, session){
+  document.getElementById('lesson-output').innerHTML = `
+    <div class="lesson-card">
+      <div class="lesson-card-header">
+        <div class="lesson-emoji">${d.emoji || '📖'}</div>
+        <div>
+          <div class="lesson-title">${d.title}</div>
+          <div class="lesson-summary">${d.summary}</div>
+        </div>
+      </div>
+      <div class="lesson-card-body">
+        <div class="lesson-text">${d.lesson}</div>
+        <div class="examples-section">
+          <h4>💡 Real Examples</h4>
+          ${d.examples.map((ex,i)=>`
+            <div class="example-item">
+              <span class="example-num">${i+1}.</span>
+              <span>${ex}</span>
+            </div>`).join('')}
+        </div>
+        <div class="takeaway-section">
+          <h4>🎯 Key Takeaway</h4>
+          <div class="takeaway-box">⭐ ${d.key_takeaway}</div>
+        </div>
+      </div>
+      <div class="tts-row">
+        <button class="btn-secondary" id="tts-btn-${Date.now()}" onclick="speakLesson(this.closest('.lesson-card').querySelector('.lesson-text').textContent, this)">
+          🔊 Listen to this lesson
+        </button>
+        <button class="btn-secondary" onclick="switchMode('quiz');document.getElementById('quiz-topic').value='${currentTopic}'">
+          🧪 Take a quiz on this
+        </button>
+      </div>
+    </div>`;
+  if(session) updateSidebar(session);
+}
+
+/* ── TTS — Browser Web Speech API (no install needed) ─────────── */
+let currentUtterance = null;
+
+function speakLesson(text, btnEl){
+  // Stop if already speaking
+  if(window.speechSynthesis.speaking){
+    window.speechSynthesis.cancel();
+    if(btnEl){ btnEl.classList.remove('speaking'); btnEl.innerHTML='🔊 Listen to this lesson'; }
+    return;
+  }
+
+  if(!('speechSynthesis' in window)){
+    toast('🔇 Your browser does not support Text-to-Speech');
+    return;
+  }
+
+  // Strip HTML tags for clean speech
+  const clean = text.replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+  const utter = new SpeechSynthesisUtterance(clean);
+  utter.rate = 0.92;
+  utter.pitch = 1.0;
+  utter.lang = 'en-US';
+
+  // Pick a natural voice if available
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.find(v => v.lang.startsWith('en') && v.localService) ||
+                    voices.find(v => v.lang.startsWith('en')) ||
+                    voices[0];
+  if(preferred) utter.voice = preferred;
+
+  utter.onstart = () => {
+    if(btnEl){ btnEl.classList.add('speaking'); btnEl.innerHTML='⏹️ Stop Speaking'; }
+    toast('🔊 Speaking…');
+  };
+  utter.onend = utter.onerror = () => {
+    if(btnEl){ btnEl.classList.remove('speaking'); btnEl.innerHTML='🔊 Listen to this lesson'; }
+  };
+
+  currentUtterance = utter;
+  window.speechSynthesis.speak(utter);
+}
+
+/* ── Chat / Q&A ──────────────────────────────────────────────── */
+async function sendChat(){
+  const input = document.getElementById('chat-input');
+  const q = input.value.trim();
+  if(!q) return;
+  input.value = '';
+
+  appendMessage('user', q);
+  const typingId = appendTyping();
+
+  try{
+    const res = await fetch(`${API}/ask`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({question:q, context:currentTopic, session_id:SESSION})
+    });
+    const json = await res.json();
+    removeTyping(typingId);
+    appendMessage('ai', json.answer || '');
+  } catch{
+    removeTyping(typingId);
+    appendMessage('ai','⚠️ I\'m in offline mode. Start the API with: uvicorn main:app --reload');
+  }
+}
+
+function appendMessage(role, text){
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+  const now = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  div.innerHTML = `
+    <div class="avatar ${role}">${role==='ai'?'🤖':'👤'}</div>
+    <div>
+      <div class="bubble">${text}</div>
+      <div class="bubble-time">${now}</div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function appendTyping(){
+  const msgs = document.getElementById('chat-messages');
+  const id = 'typing_' + Date.now();
+  const div = document.createElement('div');
+  div.id = id;div.className = 'message ai';
+  div.innerHTML = `
+    <div class="avatar ai">🤖</div>
+    <div><div class="bubble"><div class="typing-indicator">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div></div></div>`;
+  msgs.appendChild(div);msgs.scrollTop = msgs.scrollHeight;
+  return id;
+}
+
+function removeTyping(id){ document.getElementById(id)?.remove(); }
+
+/* ── Speech-to-Text — Browser Web Speech API (no install needed) ── */
+let recognition = null;
+let isRecording = false; // single declaration here
+
+function toggleMic(){
+  const micBtn = document.getElementById('mic-btn');
+  const sttStatus = document.getElementById('stt-status');
+
+  if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)){
+    toast('⚠️ Voice input requires Chrome or Edge browser');
+    return;
+  }
+
+  if(isRecording){
+    // Stop recording
+    recognition && recognition.stop();
+    return;
+  }
+
+  // Start recording
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'en-US';
+  recognition.interimResults = true;  // Show live preview
+  recognition.continuous = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = () => {
+    isRecording = true;
+    micBtn.classList.add('recording');
+    micBtn.textContent = '⏹️';
+    micBtn.title = 'Click to stop recording';
+    sttStatus.style.display = 'block';
+    document.getElementById('chat-input').placeholder = '🎙️ Listening…';
+  };
+
+  recognition.onresult = (event) => {
+    let interim = '', final = '';
+    for(let i = event.resultIndex; i < event.results.length; i++){
+      const t = event.results[i][0].transcript;
+      if(event.results[i].isFinal) final += t;
+      else interim += t;
+    }
+    // Show live preview in input
+    document.getElementById('chat-input').value = final || interim;
+    if(final){
+      toast('✅ Voice captured! Press Send or Enter.');
+    }
+  };
+
+  recognition.onspeechend = () => { recognition.stop(); };
+
+  recognition.onerror = (e) => {
+    const msgs = {
+      'not-allowed': '🎤 Microphone permission denied — allow in browser settings',
+      'no-speech':   '🔇 No speech detected — try again',
+      'network':     '🌐 Network error during voice recognition'
+    };
+    toast(msgs[e.error] || `⚠️ Voice error: ${e.error}`);
+  };
+
+  recognition.onend = () => {
+    isRecording = false;
+    micBtn.classList.remove('recording');
+    micBtn.textContent = '🎤';
+    micBtn.title = 'Click to speak';
+    sttStatus.style.display = 'none';
+    document.getElementById('chat-input').placeholder = 'Ask anything about your training…';
+    // Auto-send if there's text
+    const val = document.getElementById('chat-input').value.trim();
+    if(val) sendChat();
+  };
+
+  recognition.start();
+}
+
+/* ── Quiz ────────────────────────────────────────────────────── */
+async function startQuiz(){
+  const topic = document.getElementById('quiz-topic').value.trim();
+  if(!topic){ toast('⚠️ Enter a quiz topic'); return; }
+
+  const btn = document.getElementById('quiz-btn');
+  btn.disabled = true;btn.innerHTML = '<span class="spinner"></span>';
+  document.getElementById('quiz-questions').innerHTML = `
+    <div style="text-align:center;padding:40px;color:var(--muted)">
+      <div class="spinner" style="width:32px;height:32px;margin:0 auto 12px;border-width:3px"></div>
+      <p>Generating quiz…</p>
+    </div>`;
+
+  try{
+    const res = await fetch(`${API}/generate-quiz`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({topic, num_questions:3})
+    });
+    const json = await res.json();
+    if(json.success){ quizData = json.questions; renderQuiz(); }
+  } catch{
+    quizData = getDemoQuiz(topic); renderQuiz();
+  } finally {
+    btn.disabled=false;btn.innerHTML='🎯 Start Quiz';
+  }
+}
+
+function renderQuiz(){
+  quizAnswers = {};
+  const wrap = document.getElementById('quiz-questions');
+  wrap.innerHTML = quizData.map((q,i)=>`
+    <div class="quiz-q" id="qq${i}">
+      <div class="quiz-q-num">Question ${i+1} of ${quizData.length}</div>
+      <div class="quiz-q-text">${q.question}</div>
+      <div class="quiz-options">
+        ${q.options.map(opt=>`
+          <button class="quiz-opt" onclick="answerQuiz(${i},'${opt[0]}','${q.correct}',this)">${opt}</button>
+        `).join('')}
+      </div>
+      <div class="quiz-explanation" id="exp${i}">💡 ${q.explanation}</div>
+    </div>`).join('') +
+    `<div style="text-align:center;margin-top:8px">
+      <button class="btn-primary" onclick="showScore()">📊 See My Score</button>
+    </div>`;
+}
+
+function answerQuiz(idx, chosen, correct, btn){
+  if(quizAnswers[idx] !== undefined) return;
+  quizAnswers[idx] = chosen === correct;
+  const allBtns = document.querySelectorAll(`#qq${idx} .quiz-opt`);
+  allBtns.forEach(b=>{
+    b.classList.add('disabled');
+    if(b.textContent.startsWith(correct)) b.classList.add('correct');
+    else if(b === btn && chosen !== correct) b.classList.add('wrong');
+  });
+  document.getElementById(`exp${idx}`).style.display = 'block';
+}
+
+async function showScore(){
+  const total = quizData.length;
+  const correct = Object.values(quizAnswers).filter(Boolean).length;
+  const pct = Math.round((correct/total)*100);
+  const emoji = pct>=80?'🎉':pct>=50?'👏':'💪';
+  const msg = pct>=80?'Excellent work!':pct>=50?'Good effort!':'Keep practicing!';
+  document.getElementById('quiz-questions').innerHTML = `
+    <div class="score-card">
+      <div class="score-emoji">${emoji}</div>
+      <div class="score-num">${pct}%</div>
+      <div class="score-label">${correct}/${total} correct — ${msg}</div>
+      <div style="margin-top:24px;display:flex;gap:10px;justify-content:center">
+        <button class="btn-secondary" onclick="startQuiz()">🔄 Retry</button>
+        <button class="btn-primary" onclick="switchMode('lesson')">📚 Learn More</button>
+      </div>
+    </div>`;
+  try{
+    await fetch(`${API}/session/${SESSION}/score`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({correct,total})});
+    updateSidebar({score:pct,lessons_done:0,topics:[]});
+  } catch{}
+}
+
+/* ── Sidebar Update ──────────────────────────────────────────── */
+function updateSidebar(session){
+  if(session.lessons_done) document.getElementById('stat-lessons').textContent = session.lessons_done;
+  if(session.score) {
+    document.getElementById('stat-score').textContent = session.score + '%';
+    document.getElementById('progress-fill').style.width = session.score + '%';
+  }
+  if(session.topics?.length){
+    document.getElementById('topics-list').innerHTML = session.topics.map(t=>`
+      <span class="topic-chip">📌 ${t}</span>`).join('');
+  }
+}
+
+/* ── Demo Fallback Data (offline mode) ────────────────────────── */
+function getDemoLesson(topic){
+  return {
+    title:`Quick Guide: ${topic}`,
+    summary:`A practical microlesson on ${topic} for your workplace.`,
+    lesson:`Understanding ${topic} keeps you and your team safe. Always follow the standard procedures set by your workplace. If you're unsure about any step, ask your supervisor before proceeding.`,
+    examples:[
+      `A worker who followed ${topic} guidelines prevented a serious accident last month.`,
+      `Ignoring ${topic} rules led to a 2-hour work stoppage — always stay compliant.`
+    ],
+    key_takeaway:`Apply ${topic} every single day — it protects you and everyone around you.`,
+    emoji:'📘'
+  };
+}
+
+function getDemoQuiz(topic){
+  return [
+    {question:`What is the primary goal of ${topic}?`,options:['A) Speed','B) Safety & compliance','C) Cost reduction','D) Supervision'],correct:'B',explanation:'Safety and compliance protect workers and the workplace.'},
+    {question:'When should safety guidelines be followed?',options:['A) Sometimes','B) When supervisors watch','C) Always','D) If convenient'],correct:'C',explanation:'Safety rules apply at all times, not just when watched.'},
+    {question:'Who is responsible for workplace safety?',options:['A) Only managers','B) Only safety team','C) Everyone on site','D) New employees only'],correct:'C',explanation:'Safety is a shared responsibility for every worker.'}
+  ];
+}
+</script>
+</body>
+</html>
